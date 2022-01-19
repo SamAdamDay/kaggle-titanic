@@ -26,11 +26,11 @@ class DataHandler():
 
     N_train
         The number of data points in the training set (after splitting the
-        full training set into training and validation sets).
+        full training set into training and evaluation sets).
 
-    N_valid
-        The number of data points in the validation set (after splitting the
-        full training set into training and validation sets).
+    N_eval
+        The number of data points in the evaluation set (after splitting the
+        full training set into training and evaluation sets).
         
     _history_full_train
         A list of the history of the full training set.
@@ -41,13 +41,13 @@ class DataHandler():
     def __init__(self, seed=None):
         self.N_full_train = None
         self.N_test = None
-        self.N_valid = None
+        self.N_eval = None
         self.N_test = None
         self._history_full_train = []
         self._history_test = []
         self._rng = np.random.default_rng(seed)
         self._train_indices = None
-        self._valid_indices = None
+        self._eval_indices = None
 
     def load_train_data(self, path):
         """Loads training data from the csv file at path."""
@@ -60,22 +60,22 @@ class DataHandler():
         self.N_test = len(self._history_test[0].index)
 
     def shuffle_split(self, test_fraction=0.9):
-        """Shuffle the data and split into test and valid sets.
+        """Shuffle the data and split into test and eval sets.
         
         test_fraction specifies the proportion of data going into the test
         set."""
 
         # Compute the size of the splitted sets
         self.N_train = math.floor(self.N_full_train * 0.9)
-        self.N_valid = self.N_full_train - self.N_train
+        self.N_eval = self.N_full_train - self.N_train
 
         # A permuter for the full training set, for use when dynamically
-        # accessing the split train and valid sets
+        # accessing the split train and eval sets
         permuter_full_train = self._rng.permutation(self.N_full_train)
 
-        # The set of indices for train and validation data sets
+        # The set of indices for train and evaluation data sets
         self._train_indices = permuter_full_train[:self.N_train]
-        self._valid_indices = permuter_full_train[self.N_train:]
+        self._eval_indices = permuter_full_train[self.N_train:]
 
     def _update_full_train(self, new_data):
         """Update the full training data to new_data"""
@@ -86,7 +86,7 @@ class DataHandler():
         self._history_test.append(new_data)
 
     @property
-    def data_full_train(self):
+    def full_train(self):
         """Get (modified) full training data"""
 
         if len(self._history_full_train) == 0:
@@ -95,7 +95,7 @@ class DataHandler():
         return self._history_full_train[-1]
 
     @property
-    def data_test(self):
+    def test(self):
         """Get (modified) test data"""
 
         if len(self._history_test) == 0:
@@ -110,30 +110,30 @@ class DataHandler():
         if len(self._history_full_train) == 0:
             raise AttributeError("Full training data not yet loaded.")
         if self._train_indices is None:
-            raise AttributeError("Data not yet split into train and valid"
+            raise AttributeError("Data not yet split into train and eval"
                                  " sets")
         
         
-        return self.data_full_train.loc[self._train_indices]
+        return self.full_train.loc[self._train_indices]
 
     @property
-    def valid(self):
-        """Get the (modified) splitted validation data set"""
+    def eval(self):
+        """Get the (modified) splitted evaluation data set"""
 
         if len(self._history_full_train) == 0:
             raise AttributeError("Full training data not yet loaded.")
-        if self._valid_indices is None:
-            raise AttributeError("Data not yet split into train and valid"
+        if self._eval_indices is None:
+            raise AttributeError("Data not yet split into train and eval"
                                  " sets")
         
-        return self.data_full_train.loc[self._valid_indices]
+        return self.full_train.loc[self._eval_indices]
 
     def make_dummies(self, columns=None):
         """Convert categorical data columns into dummy variables"""
 
-        new_full_train = pd.get_dummies(self.data_full_train, columns=columns)
+        new_full_train = pd.get_dummies(self.full_train, columns=columns)
         self._update_full_train(new_full_train)
-        new_test = pd.get_dummies(self.data_test, columns=columns)
+        new_test = pd.get_dummies(self.test, columns=columns)
         self._update_test(new_test)
 
 
@@ -142,9 +142,16 @@ class DataHandlerTitantic(DataHandler):
     def to_is_female(self):
         """Convert the 'Sex' column into an int 'IsFemale' column."""
 
-        if "Sex" not in self.data_full_train.columns:
+        if "Sex" not in self.full_train.columns:
             raise Error("Already converted 'Sex' to 'IsFemale'")
 
         replace_dict = {"Sex": {"female": 1, "male": 0}}
-        self._update_full_train(self.data_full_train.replace(replace_dict))
-        self._update_test(self.data_test.replace(replace_dict))
+        rename_dict = {"Sex": "IsFemale"}
+
+        new_full_train = self.full_train.replace(replace_dict)
+        new_full_train = new_full_train.rename(columns=rename_dict)
+        self._update_full_train(new_full_train)
+
+        new_test = self.test.replace(replace_dict)
+        new_test = new_test.rename(columns=rename_dict)
+        self._update_test(new_test)
