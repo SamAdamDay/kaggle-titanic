@@ -55,7 +55,7 @@ class DataHandler():
         set."""
 
         # Compute the size of the splitted sets
-        self.N_train = math.floor(self.N_full_train * 0.9)
+        self.N_train = math.floor(self.N_full_train * test_fraction)
         self.N_eval = self.N_full_train - self.N_train
 
         # A permuter for the full training set, for use when dynamically
