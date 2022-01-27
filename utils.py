@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.impute import SimpleImputer, KNNImputer
+from torch.utils.data import Dataset
 import math
 import copy
 
@@ -273,3 +274,17 @@ class DataHandlerTitantic(DataHandler):
         new_test = new_test.rename(columns=rename_dict)
 
         return self._make_new_instance(new_full_train, new_test)
+
+
+class PyTorchDataSet(DataSet):
+    """"A data set object fro use with PyTorch."""
+
+    def __init__(self, data, target_column):
+        self.X = data.drop(columns=target_column)
+        self.y = data[target_column]
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X.loc[idx], self.y.loc[idx]
