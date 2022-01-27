@@ -14,6 +14,9 @@ class DataHandler():
     
     Parameters
     ----------
+    target_columns
+        The columns of the full train data which are the targets.
+
     seed
         A seed for the random number generator.
         
@@ -34,13 +37,14 @@ class DataHandler():
         full training set into training and evaluation sets).
     """
 
-    def __init__(self, seed=None):
+    def __init__(self, target_columns=None, seed=None):
         self.N_full_train = None
         self.N_test = None
         self.N_eval = None
         self.N_test = None
         self.full_train = None
         self.test = None
+        self.target_columns = target_columns
         self._rng = np.random.default_rng(seed)
         self._train_indices = None
         self._eval_indices = None
@@ -97,6 +101,17 @@ class DataHandler():
                                  " sets")
         
         return self.full_train.loc[self._eval_indices]
+
+    def get_train_pytorch_dataset(self, feature_columns):
+        """Create a PyTorchDataSet for the train data set."""
+        
+        return PyTorchDataSet(self.train, feature_columns, 
+                              self.target_columns)
+
+    def get_eval_pytorch_dataset(self, feature_columns):
+        """Create a PyTorchDataSet for the eval data set."""
+        
+        return PyTorchDataSet(self.eval, feature_columns, self.target_columns)
 
     def _make_new_instance(self, new_full_train, new_test):
         """Copy the `self`, updating the data."""
@@ -258,6 +273,9 @@ class DataHandler():
 
 class DataHandlerTitantic(DataHandler):
 
+    def __init__(self, seed=None):
+        super().__init__(target_columns=["Survived"], seed=seed)
+
     def to_is_female(self):
         """Convert the 'Sex' column into an int 'IsFemale' column."""
 
@@ -276,12 +294,12 @@ class DataHandlerTitantic(DataHandler):
         return self._make_new_instance(new_full_train, new_test)
 
 
-class PyTorchDataSet(DataSet):
+class PyTorchDataSet(Dataset):
     """"A data set object fro use with PyTorch."""
 
-    def __init__(self, data, target_column):
-        self.X = data.drop(columns=target_column)
-        self.y = data[target_column]
+    def __init__(self, data, feature_columns, target_columns):
+        self.X = data[feature_columns]
+        self.y = data[target_columns]
 
     def __len__(self):
         return len(self.X)
