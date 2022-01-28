@@ -296,13 +296,22 @@ class DataHandlerTitantic(DataHandler):
 
 
 class PyTorchDataSet(Dataset):
-    """"A data set object fro use with PyTorch."""
+    """"A data set object for use with PyTorch."""
 
     def __init__(self, data, feature_columns, target_column):
+
+        # Get the columns as numpy arrays
         X_numpy = data[feature_columns].to_numpy()
         y_numpy = data[target_column].to_numpy()
-        self.X = torch.from_numpy(X_numpy).float()
-        self.y = torch.from_numpy(y_numpy).long()
+
+        # Make tensors out of them
+        self.X = torch.tensor(X_numpy).float()
+        self.y = torch.tensor(y_numpy)
+
+        # If the target column is an integer type, assume that it has
+        # categorical data. PyTorch needs this to be a long type.
+        if isinstance(y_numpy.dtype, np.integer):
+            self.y = self.y.long()
 
     def __len__(self):
         return len(self.X)
