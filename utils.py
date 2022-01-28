@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.impute import SimpleImputer, KNNImputer
 from torch.utils.data import Dataset
+import torch
 import math
 import copy
 
@@ -14,8 +15,8 @@ class DataHandler():
     
     Parameters
     ----------
-    target_columns
-        The columns of the full train data which are the targets.
+    target_column
+        The column of the full train data which is the target.
 
     seed
         A seed for the random number generator.
@@ -37,14 +38,14 @@ class DataHandler():
         full training set into training and evaluation sets).
     """
 
-    def __init__(self, target_columns=None, seed=None):
+    def __init__(self, target_column=None, seed=None):
         self.N_full_train = None
         self.N_test = None
         self.N_eval = None
         self.N_test = None
         self.full_train = None
         self.test = None
-        self.target_columns = target_columns
+        self.target_column = target_column
         self._rng = np.random.default_rng(seed)
         self._train_indices = None
         self._eval_indices = None
@@ -106,12 +107,12 @@ class DataHandler():
         """Create a PyTorchDataSet for the train data set."""
         
         return PyTorchDataSet(self.train, feature_columns, 
-                              self.target_columns)
+                              self.target_column)
 
     def get_eval_pytorch_dataset(self, feature_columns):
         """Create a PyTorchDataSet for the eval data set."""
         
-        return PyTorchDataSet(self.eval, feature_columns, self.target_columns)
+        return PyTorchDataSet(self.eval, feature_columns, self.target_column)
 
     def _make_new_instance(self, new_full_train, new_test):
         """Copy the `self`, updating the data."""
@@ -274,7 +275,7 @@ class DataHandler():
 class DataHandlerTitantic(DataHandler):
 
     def __init__(self, seed=None):
-        super().__init__(target_columns=["Survived"], seed=seed)
+        super().__init__(target_column="Survived", seed=seed)
 
     def to_is_female(self):
         """Convert the 'Sex' column into an int 'IsFemale' column."""
@@ -297,12 +298,14 @@ class DataHandlerTitantic(DataHandler):
 class PyTorchDataSet(Dataset):
     """"A data set object fro use with PyTorch."""
 
-    def __init__(self, data, feature_columns, target_columns):
-        self.X = data[feature_columns]
-        self.y = data[target_columns]
+    def __init__(self, data, feature_columns, target_column):
+        X_numpy = data[feature_columns].to_numpy()
+        y_numpy = data[target_column].to_numpy()
+        self.X = torch.from_numpy(X_numpy).float()
+        self.y = torch.from_numpy(y_numpy).long()
 
     def __len__(self):
         return len(self.X)
 
     def __getitem__(self, idx):
-        return self.X.loc[idx], self.y.loc[idx]
+        return self.X[idx], self.y[idx]
