@@ -11,7 +11,7 @@ Methodology
 - The 'training data' I call the 'full training data'. I split this into training data and evaluation data. This split is the same for all models.
 - I use the evaluation data to select the best model.
 - To generate the prediction for the test set, I first retrain the selected model on the full training set.
-- I abstract the preprocessing steps to the `DataHandler` container, defined in [utils.py](./utils.py), which makes sure that the same steps are applied to all data splits, and that there is not data leakage.
+- I abstract the preprocessing steps to the `DataHandler` container, defined in [utils.py](./utils.py), which makes sure that the same steps are applied to all data splits, and that there is no data leakage.
 
 
 Repo structure
